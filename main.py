@@ -65,29 +65,33 @@ def compare_nmf(m, n, r, rank):
     mlx_time = time.perf_counter() - start_time
     mlx_kl = kl_div_mlx(V_np, V_mlx_approx)
 
-    # Save results
-    os.makedirs("results", exist_ok=True)
-    with open("results/comparison_report.md", "w") as f:
-        f.write("# NMF Performance Comparison (GPU-Accelerated)\n\n")
-        f.write(f"PyTorch Device: {device}\n")
-        f.write(f"MLX Device: {'GPU (Metal)' if mx.metal.is_available() else 'CPU'}\n\n")
-        f.write("| Framework | Execution Time (s) | KL-Divergence |\n")
-        f.write("|-----------|--------------------|---------------|\n")
-        f.write(f"| PyTorch   | {torch_time:.4f}   | {torch_kl:.4f} |\n")
-        f.write(f"| MLX       | {mlx_time:.4f}   | {mlx_kl:.4f}   |\n")
-
+    write_results_to_file(m, n, rank, torch_time, mlx_time, torch_kl, mlx_kl)
     print(f"Results saved to results/comparison_report.md")
     print(f"PyTorch: Time={torch_time:.4f}s, KL-Divergence={torch_kl:.4f}")
     print(f"MLX: Time={mlx_time:.4f}s, KL-Divergence={mlx_kl:.4f}")
 
+def write_results_to_file(m, n, rank, torch_time, mlx_time, torch_kl, mlx_kl):
+
+    with open("results/comparison_report.md", "a") as f:
+        f.write(f"| PyTorch   | {m} x {n} | {rank} | {torch_time:.4f}   | {torch_kl:.4f} |\n")
+        f.write(f"| MLX       | {m} x {n} | {rank} | {mlx_time:.4f}   | {mlx_kl:.4f}   |\n")
+
+
 if __name__ == "__main__":
     
-    print("Running NMF comparison...")
-    compare_nmf(m=1000, n=500, r=20, rank=10)
+    with open("results/comparison_report.md", "w") as f:
+        f.write("# NMF Performance Comparison (GPU-Accelerated)\n\n")
+        f.write(f"PyTorch Device: mps\n")
+        f.write(f"MLX Device: {'GPU (Metal)' if mx.metal.is_available() else 'CPU'}\n\n")
+        f.write("| Framework | M x N | rank | Execution Time (s) | KL-Divergence |\n")
+        f.write("|-----------|--- | ---|--------------------|---------------|\n")
 
-    for i in range(5):
+    for i in range(1):
+        print("Running NMF comparison...")
+        compare_nmf(m=1000, n=500, r=20, rank=10)
+
         print("Running with larger matrix sizes...")
         compare_nmf(m=200000, n=1000, r=30, rank=10)
 
-    print("Running with larger rank...")
-    compare_nmf(m=100000, n=5000, r=50, rank=20)
+        print("Running with larger rank...")
+        compare_nmf(m=100000, n=5000, r=50, rank=20)
